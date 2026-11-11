@@ -1,9 +1,18 @@
-echo "Building the sample project..."
-# Install dependencies
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
 
-# Run the Python script to check if it works
-python3 sample_code.py
+echo 'BUILD: checking Python syntax'
+python3 -m compileall -q ci_lab/app ci_lab/webex_notify.py
 
-# Check for PEP 8 compliance
-echo "Checking for PEP 8 compliance..."
-pycodestyle sample_code.py --max-line-length=100
+# Stage only application source; omit caches, tests, credentials and repository files.
+stage_dir=$(mktemp -d)
+trap 'rm -rf "$stage_dir"' EXIT
+cp ci_lab/app/calculator.py ci_lab/app/main.py "$stage_dir/"
+mkdir -p ci_lab/dist
+python3 -m zipapp "$stage_dir" -m 'main:main' -o ci_lab/dist/calculator.pyz
+
+echo 'BUILD: smoke-testing packaged application: 2 + 3 = 5'
+result=$(python3 ci_lab/dist/calculator.pyz add 2 3)
+test "$result" = '5'
+echo 'BUILD PASSED: ci_lab/dist/calculator.pyz'
