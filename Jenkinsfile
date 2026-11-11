@@ -34,19 +34,19 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'python3 --version'
-                sh 'bash ci_lab/build.sh'
+                sh 'bash build.sh'
             }
         }
 
         stage('Unit tests') {
             steps {
-                sh 'bash ci_lab/test.sh'
+                sh 'bash test.sh'
             }
         }
 
         stage('Archive artifact') {
             steps {
-                archiveArtifacts artifacts: 'ci_lab/dist/calculator.pyz', fingerprint: true
+                archiveArtifacts artifacts: 'dist/calculator.pyz', fingerprint: true
             }
         }
     }
@@ -56,7 +56,7 @@ pipeline {
             script {
                 // Snapshot the build/test result before attempting delivery.
                 def result = currentBuild.currentResult
-                if (fileExists('ci_lab/webex_notify.py')) {
+                if (fileExists('webex_notify.py')) {
                     // Delivery failures make a successful run UNSTABLE; a failed
                     // build remains FAILURE. Tokens are scoped to this step.
                     catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE', catchInterruptions: false) {
@@ -67,13 +67,13 @@ pipeline {
                             withEnv(["PIPELINE_RESULT=${result}"]) {
                                 sh '''
                                     set +x
-                                    python3 ci_lab/webex_notify.py notify --status "$PIPELINE_RESULT"
+                                    python3 webex_notify.py notify --status "$PIPELINE_RESULT"
                                 '''
                             }
                         }
                     }
                 } else {
-                    echo 'Webex notification unavailable: checkout did not provide ci_lab/webex_notify.py.'
+                    echo 'Webex notification unavailable: checkout did not provide webex_notify.py.'
                 }
             }
         }

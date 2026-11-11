@@ -1,6 +1,6 @@
 import unittest
 
-from ci_lab.app.calculator import add, divide, multiply, subtract
+from app.calculator import add, divide, multiply, subtract
 
 
 class CalculatorTests(unittest.TestCase):

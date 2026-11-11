@@ -1,38 +1,37 @@
 # GitHub → ngrok → Jenkins → Webex lab
 
-This package supplies the remaining code and a setup path for your existing Windows 11 machine, GitHub repository, and Linux Jenkins container. Use your existing repository:
+This guide matches your current repository layout: Jenkinsfile, build.sh, test.sh,
+webex_notify.py, and sample_code.py are directly inside Integrated-CI-CD-pipeline;
+app/ and tests/ remain subfolders. There is no ci_lab subfolder.
 
-https://github.com/aynostroza/Integrated-CI-CD-pipeline
+Repository: https://github.com/aynostroza/Integrated-CI-CD-pipeline
 
-**Prepared and locally tested:** a calculator application, 25 unit tests, build/test scripts, a Jenkins Pipeline, and a Webex notification script adapted from your example's Bearer-token / roomId / messages API approach. The build produces a runnable Python ZIP application, then Jenkins tests it and archives the artifact.
+The repository was inspected through GitHub. The corrected scripts build the
+calculator ZIP application and run all 29 unit tests: the calculator and Webex
+tests plus your four existing sample-code tests, converted to Python unittest.
+All original sample-code assertions were retained. No pytest installation is
+needed. The application and Webex notifier are unchanged by this path fix.
 
-**Still to complete on your computer:** install any missing Jenkins tools/plugins, create the Webex bot and credentials, start ngrok, configure the job and webhook, run a live test, and record the result. This package does not claim that those account or local-machine changes have already happened. GitHub reported a connected account, but repository-reading tools were not exposed to this session; the repository contents were not verified or changed.
+## 1. Apply the path corrections locally
 
-Everything is under `ci_lab/` so you can add the lab without replacing root-level files already in your repository. The Pipeline below builds and tests the supplied calculator and notification code. It does not automatically run unknown tests from your existing project. If `ci_lab/` already exists in your checkout, compare the files before copying.
+Extract CI_CD_Root_Layout_Fix.zip outside your repository. Copy its Jenkinsfile,
+build.sh, test.sh, README.md, and tests folder into your existing local repository.
+Replace the matching files. Merge the tests folder, retaining any other files in
+it. Keep app/, sample_code.py, webex_notify.py, and your other repository files.
+No GitHub changes have been made on your behalf.
 
-## 1. Add the files to your local repository
-
-Extract the downloaded ZIP. Copy its **ci_lab folder** into the top level of your existing local repository. Do not create a second Git repository inside it. Your repository should now contain `ci_lab/Jenkinsfile`, `ci_lab/build.sh`, `ci_lab/test.sh`, `ci_lab/webex_notify.py`, and the `app` and `tests` subfolders.
-
-Open PowerShell in the repository folder. Replace the example path below with your actual folder:
-
-```powershell
-Set-Location "C:\path\to\Integrated-CI-CD-pipeline"
-git status
-git remote -v
-git branch --show-current
-```
-
-The instructions assume `main`. If your branch has another name, substitute it both in the push command and the Jenkins branch setting later. `origin` should point to your existing GitHub repository. Save any files you edited before running Git commands.
+Open PowerShell in the repository folder, then commit and push:
 
 ```powershell
-git add ci_lab
+git add Jenkinsfile build.sh test.sh README.md tests/test_calculator.py tests/test_webex_notify.py tests/test_sample_code.py
 git diff --cached --stat
-git commit -m "Add Jenkins build, unit tests, and Webex notifications"
+git commit -m "Fix pipeline paths for repository root layout"
 git push origin main
 ```
 
-If Git says `nothing to commit, working tree clean`, verify that you copied/saved the files inside this repository and that `git status --short` shows a change. A local commit does not trigger GitHub: **git push is the step that sends the commit to GitHub and causes a push event.**
+The instructions assume main. If your branch differs, use that branch in Git
+and in the Jenkins branch setting. A local commit alone does not send a webhook;
+git push sends the commit to GitHub and creates the push event.
 
 ## 2. Check your existing Jenkins container
 
@@ -60,7 +59,7 @@ docker exec -u 0 jenkins sh -c "apt-get update && apt-get install -y python3 git
 
 The application uses Python 3.9 or newer and only its standard library. No pip, virtual environment, requests package, or Docker daemon inside Jenkins is needed. An Alpine-based image uses a different package manager; for that image the equivalent is `docker exec -u 0 jenkins apk add --no-cache python3 git ca-certificates`.
 
-The package installation above persists across container restarts, but not deletion/recreation. `ci_lab/Dockerfile.jenkins` is an optional image definition for a future reproducible rebuild; it is not needed for this existing-container route. Keep your current Jenkins data volume and configuration. Do not delete/recreate your container just to follow this lab.
+The package installation above persists across container restarts, but not deletion/recreation. `Dockerfile.jenkins` is an optional image definition for a future reproducible rebuild; it is not needed for this existing-container route. Keep your current Jenkins data volume and configuration. Do not delete/recreate your container just to follow this lab.
 
 In **Manage Jenkins → Plugins**, install or confirm these plugins and their dependencies:
 
@@ -92,8 +91,8 @@ Your old ISS bot code polls for incoming commands. This lab only needs Jenkins t
 Use the provided script to list the spaces this bot can see. From PowerShell in your local repository:
 
 ```powershell
-docker cp .\ci_lab jenkins:/tmp/ci_lab
-docker exec -it jenkins python3 /tmp/ci_lab/webex_notify.py list-rooms
+docker cp .\webex_notify.py jenkins:/tmp/webex_notify.py
+docker exec -it jenkins python3 /tmp/webex_notify.py list-rooms
 ```
 
 At the hidden prompt, paste the bot token **without** `Bearer `, then press Enter. The prompt does not echo the token. Find **CI-CD Build Notifications** and copy its **Room ID**. The ID is not the room's display name. If no rooms appear, add the bot's email address to the space and try again. The helper follows API pagination.
@@ -101,7 +100,7 @@ At the hidden prompt, paste the bot token **without** `Bearer `, then press Ente
 An alternative, if Python is installed on Windows, is:
 
 ```powershell
-py -3 ci_lab/webex_notify.py list-rooms
+py -3 webex_notify.py list-rooms
 ```
 
 Do not put your bot token in a Python file, Git commit, screenshot, or recording.
@@ -166,7 +165,7 @@ In Jenkins select **New Item**, name it **Integrated-CI-CD-pipeline**, select **
 | Repository URL | `https://github.com/aynostroza/Integrated-CI-CD-pipeline.git` |
 | Credentials | **None** for this public repository |
 | Branch Specifier | `*/main` (or your actual branch) |
-| Script Path | **`ci_lab/Jenkinsfile`** |
+| Script Path | **`Jenkinsfile`** |
 
 Do not add scheduled Poll SCM or Build periodically triggers. The `githubPush()` declaration in the Jenkinsfile also configures the push trigger after its first run.
 
@@ -175,9 +174,9 @@ Save and click **Build Now once** to initialize the Pipeline and register its ch
 Open **Console Output**. A successful baseline should show:
 
 ```text
-BUILD PASSED: ci_lab/dist/calculator.pyz
+BUILD PASSED: dist/calculator.pyz
 ...
-Ran 25 tests in ...
+Ran 29 tests in ...
 OK
 ALL PYTHON UNIT TESTS PASSED
 ...
@@ -210,11 +209,11 @@ Save. GitHub sends a `ping` delivery; check **Recent Deliveries** for a successf
 
 ## 8. Rehearse the complete live pipeline
 
-Make a harmless code change in `ci_lab/app/calculator.py`, such as adding a comment beneath the module docstring. Save it and run:
+Make a harmless code change in `app/calculator.py`, such as adding a comment beneath the module docstring. Save it and run:
 
 ```powershell
-git diff -- ci_lab/app/calculator.py
-git add ci_lab/app/calculator.py
+git diff -- app/calculator.py
+git add app/calculator.py
 git commit -m "Verify automatic Jenkins build and Webex notification"
 git push origin main
 ```
@@ -233,11 +232,11 @@ Start with a completed baseline build. Then record one continuous successful run
 
 | Order | Show on screen | Rubric |
 |---|---|---|
-| 1 | Add a new comment in `ci_lab/app/calculator.py`, save, show `git diff`, `git add`, `git commit`, and `git push` | Required demonstration |
+| 1 | Add a new comment in `app/calculator.py`, save, show `git diff`, `git add`, `git commit`, and `git push` | Required demonstration |
 | 2 | Refresh GitHub immediately; show your new commit message and its relative timestamp (`now`, `just now`, or seconds ago) | 10 points |
 | 3 | Show the **ngrok terminal** receiving `POST /github-webhook/` and the successful response; optionally also show the matching request at localhost:4040 | 20 points |
 | 4 | Show Jenkins starting the new build automatically and its GitHub push cause. Do not click Build Now | 20 points |
-| 5 | Open Console Output; show the commit SHA, build stage, verbose test names, `Ran 25 tests`, `OK`, and `Finished: SUCCESS` | 20 points |
+| 5 | Open Console Output; show the commit SHA, build stage, verbose test names, `Ran 29 tests`, `OK`, and `Finished: SUCCESS` | 20 points |
 | 6 | Open the Webex space; show the bot's SUCCESS message with matching job, build number, commit SHA, and results link | 10 points |
 
 For the recording, use a fresh comment such as `# Recording demonstration: automatic build from a GitHub push.` If that exact change was already committed during practice, use a different comment so Git has a new change to commit.
@@ -256,7 +255,7 @@ Before submitting, play back the recording and verify all six items are visible 
 | `python3: not found` in Jenkins | Install Python inside the Linux container/node; installing it only on Windows does not install it in Jenkins. |
 | `apt-get: not found` | Check `/etc/os-release`; an Alpine image uses `apk` instead. |
 | `Waiting for next available executor` | Check the `linux-python` label, at least one executor, and node online state. |
-| Jenkins cannot find the Jenkinsfile | Confirm the pushed branch contains `ci_lab/Jenkinsfile`, and set Script Path to that exact path. |
+| Jenkins cannot find the Jenkinsfile | Confirm the pushed branch contains `Jenkinsfile`, and set Script Path to that exact path. |
 | `No such DSL method githubPush` | Install/update the GitHub plugin and restart Jenkins if needed. |
 | `Invalid option type timestamps` | Install Timestamper. |
 | Missing credential ID | Create Global Secret text entries named exactly `webex-bot-token` and `webex-room-id`. |
@@ -268,13 +267,13 @@ Before submitting, play back the recording and verify all six items are visible 
 | Webex 403 / 404 | Add the bot to the correct space, confirm it may post there, and use that space's Room ID. |
 | Webex 429 | Wait for the rate limit to clear and retry. The script does not blindly retry POST requests that could duplicate messages. |
 | Webex network/TLS error | Check container internet, DNS, firewall/proxy, and trusted certificate configuration. TLS verification stays enabled. |
-| `bash\r`, `$'\r'`, or shell syntax error | Shell scripts must use LF line endings. The supplied `.gitattributes` enforces LF in fresh checkouts; run `git add --renormalize ci_lab`, commit, and push if needed. |
+| `bash\r`, `$'\r'`, or shell syntax error | Shell scripts must use LF line endings. The supplied `.gitattributes` enforces LF in fresh checkouts; run `git add --renormalize build.sh test.sh`, commit, and push if needed. |
 | Notification link fails later | Keep ngrok running and Jenkins URL current; a tunnel URL works only while its endpoint is available. |
 | Jenkins finishes UNSTABLE | Inspect the notification step. A delivery problem must be fixed before recording a complete SUCCESS run. |
 
 ## Validation and references
 
-Local validation completed for the provided package: build script passed, calculator artifact ran, all 25 unit tests passed, and the notifier's API behavior was tested with mocks. Jenkins itself, your Docker container, ngrok delivery, your bot credentials, and the full live chain could not be exercised from this session. Your first manual baseline and subsequent push-triggered rehearsal validate those parts.
+Local validation completed for the provided package: build script passed, calculator artifact ran, all 29 unit tests passed, and the notifier's API behavior was tested with mocks. The original sample-code tests are included in that count. Jenkins itself, your Docker container, ngrok delivery, your bot credentials, and the full live chain could not be exercised from this session. Your first manual baseline and subsequent push-triggered rehearsal validate those parts.
 
 Official references used for the setup:
 

@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 from urllib.error import HTTPError, URLError
 
-from ci_lab import webex_notify as webex
+import webex_notify as webex
 
 
 class WebexNotificationTests(unittest.TestCase):
